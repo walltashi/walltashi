@@ -10,39 +10,102 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as IndexImport } from './routes/index'
-import { Route as ExampleIndexImport } from './routes/example/index'
+import { Route as rootRoute } from "./routes/__root";
+import { Route as IndexImport } from "./routes/index";
+import { Route as ExampleIndexImport } from "./routes/example/index";
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
-  path: '/',
+  path: "/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const ExampleIndexRoute = ExampleIndexImport.update({
-  path: '/example/',
+  path: "/example/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 // Populate the FileRoutesByPath interface
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/': {
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/example/': {
-      preLoaderRoute: typeof ExampleIndexImport
-      parentRoute: typeof rootRoute
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/example/": {
+      id: "/example/";
+      path: "/example";
+      fullPath: "/example";
+      preLoaderRoute: typeof ExampleIndexImport;
+      parentRoute: typeof rootRoute;
+    };
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([IndexRoute, ExampleIndexRoute])
+export interface FileRoutesByFullPath {
+  "/": typeof IndexRoute;
+  "/example": typeof ExampleIndexRoute;
+}
+
+export interface FileRoutesByTo {
+  "/": typeof IndexRoute;
+  "/example": typeof ExampleIndexRoute;
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute;
+  "/": typeof IndexRoute;
+  "/example/": typeof ExampleIndexRoute;
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/example";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/example";
+  id: "__root__" | "/" | "/example/";
+  fileRoutesById: FileRoutesById;
+}
+
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute;
+  ExampleIndexRoute: typeof ExampleIndexRoute;
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  ExampleIndexRoute: ExampleIndexRoute,
+};
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>();
 
 /* prettier-ignore-end */
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/",
+        "/example/"
+      ]
+    },
+    "/": {
+      "filePath": "index.tsx"
+    },
+    "/example/": {
+      "filePath": "example/index.tsx"
+    }
+  }
+}
+ROUTE_MANIFEST_END */

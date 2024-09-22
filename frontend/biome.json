@@ -90,15 +90,15 @@
   },
   "javascript": {
     "formatter": {
-      "indentWidth": 4,
-      "jsxQuoteStyle": "single",
+      "indentWidth": 2,
+      "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
-      "trailingCommas": "none",
+      "trailingCommas": "es5",
       "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSpacing": true,
       "bracketSameLine": false,
-      "quoteStyle": "single",
+      "quoteStyle": "double",
       "attributePosition": "auto"
     }
   },
