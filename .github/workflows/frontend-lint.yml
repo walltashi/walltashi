@@ -27,6 +27,8 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install
+        working-directory: ./frontend
 
       - name: Run Linter
         run: pnpm run lint
+        working-directory: ./frontend
