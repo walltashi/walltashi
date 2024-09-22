@@ -1,5 +1,6 @@
 node_modules
 vite-env.d.ts
+.wasm
 
 # Logs
 logs
