@@ -13,6 +13,18 @@ build:
 run:
 	@go run cmd/api/main.go
 
+# Start local supabase services
+db-start:
+	@supabase start
+
+# Stop local supabase services
+db-stop:
+	@supabase stop
+
+# Reset db and apply migrations
+db-reset:
+	@supabase db reset
+
 # Test the application
 test:
 	@echo "Testing..."
