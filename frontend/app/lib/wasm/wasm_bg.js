@@ -192,6 +192,28 @@ function passArray8ToWasm0(arg, malloc) {
     return ptr;
 }
 
+let cachedFloat64ArrayMemory0 = null;
+
+function getFloat64ArrayMemory0() {
+    if (cachedFloat64ArrayMemory0 === null || cachedFloat64ArrayMemory0.byteLength === 0) {
+        cachedFloat64ArrayMemory0 = new Float64Array(wasm.memory.buffer);
+    }
+    return cachedFloat64ArrayMemory0;
+}
+
+function getArrayF64FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
+}
+
+let stack_pointer = 128;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
+}
+
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -302,10 +324,58 @@ export class ImageManager {
         wasm.imagemanager_delete_selected_image(this.__wbg_ptr);
     }
     /**
+    * @param {number} id
+    * @returns {Float64Array}
+    */
+    get_image_size(id) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.imagemanager_get_image_size(retptr, this.__wbg_ptr, id);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayF64FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 8, 8);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * @param {number} id
+    * @returns {Float64Array}
+    */
+    get_image_pos(id) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.imagemanager_get_image_pos(retptr, this.__wbg_ptr, id);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayF64FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 8, 8);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * @param {number} id
+    * @param {number} new_width
+    * @param {number} new_height
+    * @param {number} x
+    * @param {number} y
+    */
+    update_image(id, new_width, new_height, x, y) {
+        wasm.imagemanager_update_image(this.__wbg_ptr, id, new_width, new_height, x, y);
+    }
+    /**
     * @param {CanvasRenderingContext2D} context
     */
     render(context) {
-        wasm.imagemanager_render(this.__wbg_ptr, addHeapObject(context));
+        try {
+            wasm.imagemanager_render(this.__wbg_ptr, addBorrowedObject(context));
+        } finally {
+            heap[stack_pointer++] = undefined;
+        }
     }
 }
 

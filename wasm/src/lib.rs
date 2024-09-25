@@ -1,7 +1,7 @@
 mod utils;
 
 use wasm_bindgen::{prelude::*, Clamped};
-use web_sys::CanvasRenderingContext2d;
+use web_sys::{CanvasRenderingContext2d, ImageData};
 use js_sys::Uint8ClampedArray;
 
 #[wasm_bindgen]
@@ -31,11 +31,14 @@ pub struct ImageManager {
 #[wasm_bindgen]
 pub struct Image {
     id: u32,
+    original_width: u32,
+    original_height: u32,
     width: u32,
     height: u32,
     x: f64,
     y: f64,
     data: Vec<u8>,
+    scale: f64,
 }
 
 #[wasm_bindgen]
@@ -53,11 +56,14 @@ impl ImageManager {
         log(&format!("Adding image {} with size {}x{} -Rust", id, width, height));
         self.images.push(Image {
             id,
+            original_width: width,
+            original_height: height,
             width,
             height,
             x: 0.0,
             y: 0.0,
             data,
+            scale: 1.0,
         });
         log("Image added -Rust");
         id
@@ -73,8 +79,8 @@ impl ImageManager {
 
     pub fn select_image(&mut self, x: f64, y: f64) -> Option<u32> {
         self.selected_image = self.images.iter().rev().position(|img| {
-            x >= img.x && x < img.x + img.width as f64 &&
-            y >= img.y && y < img.y + img.height as f64
+            x >= img.x && x < img.x + (img.width as f64 * img.scale) &&
+            y >= img.y && y < img.y + (img.height as f64 * img.scale)
         }).map(|index| self.images.len() - 1 - index);
 
         self.selected_image.map(|index| self.images[index].id)
@@ -87,15 +93,57 @@ impl ImageManager {
         }
     }
 
-    pub fn render(&self, context: CanvasRenderingContext2d) {
+   
+    pub fn get_image_size(&self, id: u32) -> Vec<f64> {
+        self.images.iter().find(|img| img.id == id)
+            .map(|img| vec![img.width as f64 * img.scale, img.height as f64 * img.scale])
+            .unwrap_or_else(|| vec![])
+    }
+
+    pub fn get_image_pos(&self, id: u32) -> Vec<f64> {
+        self.images.iter().find(|img| img.id == id)
+            .map(|img| vec![img.x, img.y])
+            .unwrap_or_else(|| vec![])
+    }
+
+    pub fn update_image(&mut self, id: u32, new_width: u32, new_height: u32, x: f64, y: f64) {
+        if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
+            image.x = x;
+            image.y = y;
+            image.width = new_width;
+            image.height = new_height;
+        }
+    }
+
+    fn resize_image(&self, original_data: &[u8], original_width: u32, original_height: u32, new_width: u32, new_height: u32) -> Vec<u8> {
+        let mut resized_data = vec![0u8; (new_width * new_height * 4) as usize];
+        
+        for y in 0..new_height {
+            for x in 0..new_width {
+                let orig_x = (x as f64 * original_width as f64 / new_width as f64) as u32;
+                let orig_y = (y as f64 * original_height as f64 / new_height as f64) as u32;
+                
+                let orig_index = ((orig_y * original_width + orig_x) * 4) as usize;
+                let new_index = ((y * new_width + x) * 4) as usize;
+                
+                resized_data[new_index..new_index + 4].copy_from_slice(&original_data[orig_index..orig_index + 4]);
+            }
+        }
+        
+        resized_data
+    }
+
+    pub fn render(&self, context: &CanvasRenderingContext2d) {
         for (index, image) in self.images.iter().enumerate() {
-            let slice_data = Clamped(&image.data[..]);
-            let image_data = web_sys::ImageData::new_with_u8_clamped_array_and_sh(
-                slice_data,
+            let resized_data = self.resize_image(&image.data, image.original_width, image.original_height, image.width, image.height);
+            let image_data = ImageData::new_with_u8_clamped_array_and_sh(
+                Clamped(&resized_data),
                 image.width,
                 image.height
             ).unwrap();
+            
             context.put_image_data(&image_data, image.x, image.y).unwrap();
+
             if Some(index) == self.selected_image {
                 context.set_stroke_style(&JsValue::from_str("blue"));
                 context.set_line_width(2.0);

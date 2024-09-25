@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { ImageManager } from "@/lib/wasm/wasm";
 import { useEffect, useRef, useState } from 'react';
+import ResizeComp from "./-components/ResizeComp";
 
 
 export const Route = createFileRoute("/dingboard/")({
@@ -26,13 +27,7 @@ function DingBoard() {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        console.log(ctx);
-        try{
-          imageManager.render(ctx);
-        }
-        catch(e){
-          console.log(e);
-        }
+        imageManager.render(ctx);
       }
     }
   }, [imageManager, version]);
@@ -113,7 +108,6 @@ function DingBoard() {
       if (rect) {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        console.log(x - dragStart.x, y - dragStart.y);
         imageManager.move_image(selectedImage, x - dragStart.x, y - dragStart.y);
         setDragStart({ x, y });
         setVersion((prev) => prev + 1);
@@ -150,6 +144,14 @@ function DingBoard() {
         onMouseLeave={handleMouseUp}
         style={{ border: '1px solid black' }}
       />
+      {selectedImage !== null && imageManager !== null && (
+        <ResizeComp
+          imageManager={imageManager}
+          selectedImage={selectedImage}
+          version={version}
+          setVersion={setVersion}
+        />
+      )}
     </div>
   );
 };
