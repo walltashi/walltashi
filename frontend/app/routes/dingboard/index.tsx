@@ -23,6 +23,7 @@ function DingBoard() {
     setImageManager(new ImageManager());
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <need version dependency for now>
   useEffect(() => {
     if (imageManager && canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d', { alpha: true });
@@ -137,6 +138,7 @@ function DingBoard() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <don't need handle delete in dependency someone better at react than me fix this>
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -189,7 +191,6 @@ function DingBoard() {
         <ImageResizer
           imageManager={imageManager}
           selectedImage={selectedImage}
-          version={version}
           setVersion={setVersion}
         />
       )}

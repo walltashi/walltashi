@@ -4,11 +4,10 @@ import type { ImageManager } from "@/lib/wasm/wasm";
 interface ImageResizerProps {
   imageManager: ImageManager; 
   selectedImage: number; 
-  version: number;
   setVersion: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage, version, setVersion }) => {
+const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage, setVersion }) => {
   const [draggingCorner, setDraggingCorner] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
@@ -86,7 +85,7 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingCorner, imageManager, selectedImage, version, setVersion]);
+  }, [draggingCorner, imageManager, selectedImage, aspectRatio, setVersion]);
 
   return (
     <>
