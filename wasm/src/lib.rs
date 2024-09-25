@@ -1,8 +1,11 @@
 mod utils;
 
 use wasm_bindgen::{prelude::*, Clamped};
-use web_sys::{CanvasRenderingContext2d, ImageData};
-use js_sys::Uint8ClampedArray;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{CanvasRenderingContext2d, ImageData, ImageBitmap};
+
+
+extern crate console_error_panic_hook;
 
 #[wasm_bindgen]
 extern "C" {
@@ -35,6 +38,7 @@ pub struct Image {
     original_height: u32,
     width: u32,
     height: u32,
+    rotation: f64,
     x: f64,
     y: f64,
     data: Vec<u8>
@@ -44,6 +48,7 @@ pub struct Image {
 impl ImageManager {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
+        console_error_panic_hook::set_once();
         ImageManager {
             images: Vec::new(),
             selected_image: None,
@@ -53,12 +58,14 @@ impl ImageManager {
     pub fn add_image(&mut self, width: u32, height: u32, data: Vec<u8>) -> u32 {
         let id = self.images.len() as u32;
         log(&format!("Adding image {} with size {}x{} -Rust", id, width, height));
+        
         self.images.push(Image {
             id,
             original_width: width,
             original_height: height,
             width,
             height,
+            rotation: 0.0,
             x: 0.0,
             y: 0.0,
             data
@@ -69,7 +76,6 @@ impl ImageManager {
 
     pub fn move_image(&mut self, id: u32, x: f64, y: f64) {
         if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
-            log(&format!("Moving image {} to ({}, {}) -Rust", id, image.x + x, image.y + y));
             image.x += x;
             image.y += y;
         }
@@ -81,9 +87,7 @@ impl ImageManager {
             y >= img.y && y < img.y + img.height as f64
         }).map(|index| self.images.len() - 1 - index);
         
-        if self.selected_image.is_none() {
-            self.selected_image = None;
-        }
+        log(&format!("Selected image: {:?}", self.selected_image));
         self.selected_image.map(|index| self.images[index].id)
     }
 
@@ -107,13 +111,26 @@ impl ImageManager {
             .unwrap_or_else(|| vec![])
     }
 
-    pub fn update_image(&mut self, id: u32, new_width: u32, new_height: u32, x: f64, y: f64) {
+    pub fn get_image_rotation(&self, id: u32) -> f64 {
+        self.images.iter().find(|img| img.id == id)
+            .map(|img| img.rotation)
+            .unwrap_or(0.0)
+    }
+
+    pub fn update_image_size(&mut self, id: u32, new_width: u32, new_height: u32, x: f64, y: f64) {
         if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
             log(&format!("Updating image {} to size {}x{} and position ({}, {}) -Rust", id, new_width, new_height, x, y));
             image.x = x;
             image.y = y;
             image.width = new_width;
             image.height = new_height;
+        }
+    }
+
+    pub fn update_image_rotation(&mut self, id: u32, angle: f64) {
+        if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
+            log(&format!("Updating image {} rotation to {} -Rust", id, angle));
+            image.rotation = angle;
         }
     }
 
@@ -135,27 +152,62 @@ impl ImageManager {
         resized_data
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) {
+
+    pub async fn render(&self, context: &CanvasRenderingContext2d) {
         for (index, image) in self.images.iter().enumerate() {
-            let resized_data = self.resize_image(&image.data, image.original_width, image.original_height, image.width, image.height);
+            // let (rotated_data, rotated_width, rotated_height) = self.rotate(
+            //     &image.data,
+            //     image.original_width,
+            //     image.original_height,
+            //     image.rotation, 
+            // );
+    
+            // Now resize the rotated image to the desired width and height
+            let resized_data = self.resize_image(
+                &image.data,
+                image.original_width,
+                image.original_height,
+                image.width,
+                image.height,
+            );
+
+            let clamped_data = Clamped(&resized_data[..]);
+
             let image_data = ImageData::new_with_u8_clamped_array_and_sh(
-                Clamped(&resized_data),
+                clamped_data,
                 image.width,
                 image.height
-            ).unwrap();
-            
-            context.put_image_data(&image_data, image.x, image.y).unwrap();
+            ).unwrap();    
 
-            if Some(index) == self.selected_image {
-                context.set_stroke_style(&JsValue::from_str("blue"));
-                context.set_line_width(2.0);
-                context.stroke_rect(
-                    image.x - 2.0,
-                    image.y - 2.0,
-                    image.width as f64 + 4.0,
-                    image.height as f64 + 4.0
-                );
-            }
+
+            context.set_global_composite_operation("source-over").unwrap();
+            let bmp_promise = web_sys::window()
+            .unwrap()
+            .create_image_bitmap_with_image_data(&image_data)
+            .unwrap();
+        
+            let bmp = JsFuture::from(bmp_promise).await.unwrap();
+            let bmp: ImageBitmap = bmp.dyn_into().unwrap();
+
+            // Save the current canvas state
+            context.save();
+
+            // Move the origin to the center of the image before rotating
+            let center_x = image.x + image.width as f64 / 2.0;
+            let center_y = image.y + image.height as f64 / 2.0;
+
+            
+           
+            // Translate and rotate the canvas
+            context.translate(center_x, center_y).unwrap();
+            context.rotate(image.rotation.to_radians()).unwrap();
+
+            // Draw the image, offset by the image's width and height, so it rotates around its center
+            context.draw_image_with_image_bitmap(&bmp, -(image.width as f64) / 2.0, -(image.height as f64) / 2.0).unwrap();
+
+            // Restore the canvas to its original state (pre-rotation)
+            context.restore();
+
         }
     }
 }

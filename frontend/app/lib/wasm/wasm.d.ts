@@ -46,14 +46,25 @@ export class ImageManager {
   get_image_pos(id: number): Float64Array;
 /**
 * @param {number} id
+* @returns {number}
+*/
+  get_image_rotation(id: number): number;
+/**
+* @param {number} id
 * @param {number} new_width
 * @param {number} new_height
 * @param {number} x
 * @param {number} y
 */
-  update_image(id: number, new_width: number, new_height: number, x: number, y: number): void;
+  update_image_size(id: number, new_width: number, new_height: number, x: number, y: number): void;
+/**
+* @param {number} id
+* @param {number} angle
+*/
+  update_image_rotation(id: number, angle: number): void;
 /**
 * @param {CanvasRenderingContext2D} context
+* @returns {Promise<void>}
 */
-  render(context: CanvasRenderingContext2D): void;
+  render(context: CanvasRenderingContext2D): Promise<void>;
 }

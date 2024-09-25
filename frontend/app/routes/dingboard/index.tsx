@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { ImageManager } from "@/lib/wasm/wasm";
 import { useEffect, useRef, useState } from 'react';
-import ResizeComp from "./-components/ResizeComp";
+import ImageResizer from "./-components/ResizeComp";
+import { Slider } from "@/components/ui/slider"
 
 
 export const Route = createFileRoute("/dingboard/")({
@@ -24,9 +25,10 @@ function DingBoard() {
 
   useEffect(() => {
     if (imageManager && canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
+      const ctx = canvasRef.current.getContext('2d', { alpha: true });
       if (ctx) {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.globalCompositeOperation = "source-over";
         imageManager.render(ctx);
       }
     }
@@ -62,13 +64,18 @@ function DingBoard() {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d', { alpha: true });
           if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, img.width, img.height);
-            const id = imageManager.add_image(img.width, img.height, new Uint8Array(imageData.data));
-            setSelectedImage(id);
-            setVersion((prev) => prev + 1);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // Add this line to make sure the alpha is respected when drawing the image
+          ctx.globalCompositeOperation = 'source-over';
+
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, img.width, img.height);
+          const id = imageManager.add_image(img.width, img.height, new Uint8Array(imageData.data.buffer));
+          setSelectedImage(id);
+          setVersion((prev) => prev + 1);
           }
         };
         img.src = e.target?.result as string;
@@ -130,12 +137,37 @@ function DingBoard() {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedImage !== null){
+          handleDeleteSelected();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedImage]);
+
+  const handleSliderChange = (value: number[]) => {
+    if (imageManager && selectedImage !== null) {
+      imageManager.update_image_rotation(selectedImage, value[0]);
+      setVersion((prev) => prev + 1);
+    }
+  };
+
   return (
     <div>
-      <input type="file" accept="image/*" onChange={handleImageUpload} />
-      <Button onClick={handleDeleteSelected} disabled={selectedImage === null}>
-        Delete Selected Image
-      </Button>
+      <div className="absolute">
+        <input type="file" accept="image/*" onChange={handleImageUpload} />
+        <Button onClick={handleDeleteSelected} disabled={selectedImage === null}>
+          Delete Selected Image
+        </Button>
+        <Slider defaultValue={[0]} max={360} step={1} onValueChange={handleSliderChange} />
+      </div>
       <canvas
         ref={canvasRef}
         width={2560}
@@ -145,10 +177,16 @@ function DingBoard() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ border: '1px solid black' }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleCanvasClick(e as unknown as React.MouseEvent<HTMLCanvasElement>);
+          }
+        }}
+        tabIndex={0} 
+        style={{ border: '1px solid black', background: 'transparent' }}
       />
       {selectedImage !== null && imageManager !== null && (
-        <ResizeComp
+        <ImageResizer
           imageManager={imageManager}
           selectedImage={selectedImage}
           version={version}
