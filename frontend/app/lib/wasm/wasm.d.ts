@@ -36,9 +36,9 @@ export class ImageManager {
   delete_selected_image(): void;
 /**
 * @param {number} id
-* @returns {Float64Array}
+* @returns {Uint32Array}
 */
-  get_image_size(id: number): Float64Array;
+  get_image_size(id: number): Uint32Array;
 /**
 * @param {number} id
 * @returns {Float64Array}

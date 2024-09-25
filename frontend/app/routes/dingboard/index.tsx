@@ -90,14 +90,17 @@ function DingBoard() {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (selectedImage !== null) {
-      setIsDragging(true);
+    if (imageManager) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
-        setDragStart({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        });
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const id = imageManager.select_image(x, y);
+        setSelectedImage(id !== undefined ? id : null);
+        if (id !== undefined) {
+          setIsDragging(true);
+          setDragStart({ x, y });
+        }
       }
     }
   };

@@ -17,8 +17,9 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
     const handleMouseMove = (e: MouseEvent) => {
       if (!draggingCorner || !imageManager || selectedImage === null) return;
 
-      const [height, width] = imageManager.get_image_size(selectedImage);
+      const [width, height] = imageManager.get_image_size(selectedImage);
       const [xPos, yPos] = imageManager.get_image_pos(selectedImage);
+      console.log('height:', height, 'width:', width, 'xPos:', xPos, 'yPos:', yPos);
       if (!xPos || !yPos || !height || !width) return;
 
       const deltaX = e.clientX - xPos;
@@ -37,6 +38,8 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
           newHeight = height - deltaY;
           newX = xPos + deltaX;
           newY = yPos + deltaY;
+          console.log(newWidth, newHeight, newX, newY);
+
           break;
         case 'top-right':
           newWidth = deltaX;
@@ -55,13 +58,19 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
         default:
           break;
       }
-      console.log('newX:', newX, 'newY:', newY, 'newWidth:', newWidth, 'newHeight:', newHeight);
+      console.log(newWidth, newHeight, newX, newY);
 
 
       // Apply limits to the size (max width 2560px)
       if (newWidth > 2560) newWidth = 2560;
-      if (newHeight > 2560) newHeight = 2560;
+      if (newWidth === 0) newWidth = 1;
+      if (newWidth < 0) newWidth = -newWidth;
 
+      if (newHeight > 2560) newHeight = 2560;
+      if (newHeight === 0) newHeight = 1;
+      if (newHeight < 0) newHeight = -newHeight;
+
+      console.log(newWidth, newHeight, newX, newY);
       imageManager.update_image(selectedImage, newWidth, newHeight, newX, newY);
       setVersion((prev) => prev + 1);
     };
@@ -86,7 +95,7 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
   return (
     <>
       {imageManager && selectedImage !== null && (() => {
-        const [height, width] = imageManager.get_image_size(selectedImage);
+        const [width, height] = imageManager.get_image_size(selectedImage);
         const [xPos, yPos] = imageManager.get_image_pos(selectedImage);
         return (
           <>
@@ -95,7 +104,7 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
               className="resize-handle top-left"
               style={{
                 left: `${xPos}px`,
-                top: `${yPos}px`,
+                top: yPos,
                 position: 'absolute',
                 width: '10px',
                 height: '10px',

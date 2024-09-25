@@ -37,8 +37,7 @@ pub struct Image {
     height: u32,
     x: f64,
     y: f64,
-    data: Vec<u8>,
-    scale: f64,
+    data: Vec<u8>
 }
 
 #[wasm_bindgen]
@@ -62,8 +61,7 @@ impl ImageManager {
             height,
             x: 0.0,
             y: 0.0,
-            data,
-            scale: 1.0,
+            data
         });
         log("Image added -Rust");
         id
@@ -79,10 +77,13 @@ impl ImageManager {
 
     pub fn select_image(&mut self, x: f64, y: f64) -> Option<u32> {
         self.selected_image = self.images.iter().rev().position(|img| {
-            x >= img.x && x < img.x + (img.width as f64 * img.scale) &&
-            y >= img.y && y < img.y + (img.height as f64 * img.scale)
+            x >= img.x && x < img.x + img.width as f64 &&
+            y >= img.y && y < img.y + img.height as f64
         }).map(|index| self.images.len() - 1 - index);
-
+        
+        if self.selected_image.is_none() {
+            self.selected_image = None;
+        }
         self.selected_image.map(|index| self.images[index].id)
     }
 
@@ -94,9 +95,9 @@ impl ImageManager {
     }
 
    
-    pub fn get_image_size(&self, id: u32) -> Vec<f64> {
+    pub fn get_image_size(&self, id: u32) -> Vec<u32> {
         self.images.iter().find(|img| img.id == id)
-            .map(|img| vec![img.width as f64 * img.scale, img.height as f64 * img.scale])
+            .map(|img| vec![img.width, img.height])
             .unwrap_or_else(|| vec![])
     }
 
@@ -108,6 +109,7 @@ impl ImageManager {
 
     pub fn update_image(&mut self, id: u32, new_width: u32, new_height: u32, x: f64, y: f64) {
         if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
+            log(&format!("Updating image {} to size {}x{} and position ({}, {}) -Rust", id, new_width, new_height, x, y));
             image.x = x;
             image.y = y;
             image.width = new_width;
