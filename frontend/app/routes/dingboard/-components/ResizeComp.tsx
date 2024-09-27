@@ -81,11 +81,13 @@ const ImageResizer: React.FC<ImageResizerProps> = ({ imageManager, selectedImage
       // Apply size limits
       newWidth = Math.max(10, Math.min(2560, newWidth));
       newHeight = Math.max(10, Math.min(2560, newHeight));
+
+      // don't let it cross over
       if (newX > initialPosition.x + initialSize.width) {
-        newX = 0;
+        newX = initialPosition.x + initialSize.width;
       }
       if (newY > initialPosition.y + initialSize.height) {
-        newY = 0;
+        newY = initialPosition.y + initialSize.height;
       }
 
       imageManager.update_image_size(selectedImage, Math.round(newWidth), Math.round(newHeight));
