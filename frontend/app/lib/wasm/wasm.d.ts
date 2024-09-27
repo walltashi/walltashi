@@ -24,7 +24,13 @@ export class ImageManager {
 * @param {number} x
 * @param {number} y
 */
-  move_image(id: number, x: number, y: number): void;
+  move_image_relative(id: number, x: number, y: number): void;
+/**
+* @param {number} id
+* @param {number} x
+* @param {number} y
+*/
+  move_image_absolute(id: number, x: number, y: number): void;
 /**
 * @param {number} x
 * @param {number} y
@@ -53,10 +59,8 @@ export class ImageManager {
 * @param {number} id
 * @param {number} new_width
 * @param {number} new_height
-* @param {number} x
-* @param {number} y
 */
-  update_image_size(id: number, new_width: number, new_height: number, x: number, y: number): void;
+  update_image_size(id: number, new_width: number, new_height: number): void;
 /**
 * @param {number} id
 * @param {number} angle

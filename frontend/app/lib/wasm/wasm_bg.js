@@ -275,7 +275,7 @@ function getClampedArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint8ClampedArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
 }
-function __wbg_adapter_60(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_51(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h1afa2b842b0e3904(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -342,8 +342,16 @@ export class ImageManager {
     * @param {number} x
     * @param {number} y
     */
-    move_image(id, x, y) {
-        wasm.imagemanager_move_image(this.__wbg_ptr, id, x, y);
+    move_image_relative(id, x, y) {
+        wasm.imagemanager_move_image_relative(this.__wbg_ptr, id, x, y);
+    }
+    /**
+    * @param {number} id
+    * @param {number} x
+    * @param {number} y
+    */
+    move_image_absolute(id, x, y) {
+        wasm.imagemanager_move_image_absolute(this.__wbg_ptr, id, x, y);
     }
     /**
     * @param {number} x
@@ -412,11 +420,9 @@ export class ImageManager {
     * @param {number} id
     * @param {number} new_width
     * @param {number} new_height
-    * @param {number} x
-    * @param {number} y
     */
-    update_image_size(id, new_width, new_height, x, y) {
-        wasm.imagemanager_update_image_size(this.__wbg_ptr, id, new_width, new_height, x, y);
+    update_image_size(id, new_width, new_height) {
+        wasm.imagemanager_update_image_size(this.__wbg_ptr, id, new_width, new_height);
     }
     /**
     * @param {number} id
@@ -435,12 +441,12 @@ export class ImageManager {
     }
 }
 
-export function __wbindgen_object_drop_ref(arg0) {
-    takeObject(arg0);
-};
-
 export function __wbg_log_12af4e1f5b304c40(arg0, arg1) {
     console.log(getStringFromWasm0(arg0, arg1));
+};
+
+export function __wbindgen_object_drop_ref(arg0) {
+    takeObject(arg0);
 };
 
 export function __wbg_instanceof_Window_5012736c80a01584(arg0) {
@@ -459,28 +465,8 @@ export function __wbg_createImageBitmap_b7c7bb61272dc716() { return handleError(
     return addHeapObject(ret);
 }, arguments) };
 
-export function __wbg_setglobalCompositeOperation_eee5aa940370a2f6() { return handleError(function (arg0, arg1, arg2) {
-    getObject(arg0).globalCompositeOperation = getStringFromWasm0(arg1, arg2);
-}, arguments) };
-
 export function __wbg_drawImage_98396132a5d91c73() { return handleError(function (arg0, arg1, arg2, arg3) {
     getObject(arg0).drawImage(getObject(arg1), arg2, arg3);
-}, arguments) };
-
-export function __wbg_restore_f1e60b7a6baea463(arg0) {
-    getObject(arg0).restore();
-};
-
-export function __wbg_save_3cc576b49ad4c50d(arg0) {
-    getObject(arg0).save();
-};
-
-export function __wbg_rotate_3ac6bb19a1c15c1c() { return handleError(function (arg0, arg1) {
-    getObject(arg0).rotate(arg1);
-}, arguments) };
-
-export function __wbg_translate_8d9423d4f949d7d6() { return handleError(function (arg0, arg1, arg2) {
-    getObject(arg0).translate(arg1, arg2);
 }, arguments) };
 
 export function __wbg_instanceof_ImageBitmap_67d95957e052fa84(arg0) {
@@ -570,7 +556,7 @@ export function __wbg_new_b85e72ed1bfd57f9(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_60(a, state0.b, arg0, arg1);
+                return __wbg_adapter_51(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -639,7 +625,7 @@ export function __wbindgen_throw(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
 };
 
-export function __wbindgen_closure_wrapper287(arg0, arg1, arg2) {
+export function __wbindgen_closure_wrapper278(arg0, arg1, arg2) {
     const ret = makeMutClosure(arg0, arg1, 16, __wbg_adapter_16);
     return addHeapObject(ret);
 };

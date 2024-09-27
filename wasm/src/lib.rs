@@ -74,10 +74,17 @@ impl ImageManager {
         id
     }
 
-    pub fn move_image(&mut self, id: u32, x: f64, y: f64) {
+    pub fn move_image_relative(&mut self, id: u32, x: f64, y: f64) {
         if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
             image.x += x;
             image.y += y;
+        }
+    }
+
+    pub fn move_image_absolute(&mut self, id: u32, x: f64, y: f64){
+        if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
+            image.x = x;
+            image.y = y;
         }
     }
 
@@ -101,7 +108,7 @@ impl ImageManager {
    
     pub fn get_image_size(&self, id: u32) -> Vec<u32> {
         self.images.iter().find(|img| img.id == id)
-            .map(|img| vec![img.width, img.height])
+            .map(|img| vec![img.width, img.height, img.original_width, img.original_height])
             .unwrap_or_else(|| vec![])
     }
 
@@ -117,11 +124,11 @@ impl ImageManager {
             .unwrap_or(0.0)
     }
 
-    pub fn update_image_size(&mut self, id: u32, new_width: u32, new_height: u32, x: f64, y: f64) {
+    pub fn update_image_size(&mut self, id: u32, new_width: u32, new_height: u32) {
         if let Some(image) = self.images.iter_mut().find(|img| img.id == id) {
-            log(&format!("Updating image {} to size {}x{} and position ({}, {}) -Rust", id, new_width, new_height, x, y));
-            image.x = x;
-            image.y = y;
+            //log(&format!("Updating image {} to size {}x{} and position ({}, {}) -Rust", id, new_width, new_height, x, y));
+            // image.x = x;
+            // image.y = y;
             image.width = new_width;
             image.height = new_height;
         }
@@ -152,17 +159,51 @@ impl ImageManager {
         resized_data
     }
 
+    fn rotate(&self, data: &[u8], width: u32, height: u32, degangle: f64) -> (Vec<u8>, u32, u32) {
+        let angle = degangle.to_radians();
+        let (sin_theta, cos_theta) = (angle.sin(), angle.cos());
+        
+        // Calculate the new dimensions of the bounding box
+        let new_width = (width as f64 * cos_theta.abs() + height as f64 * sin_theta.abs()).ceil() as u32;
+        let new_height = (width as f64 * sin_theta.abs() + height as f64 * cos_theta.abs()).ceil() as u32;
+        
+        let mut rotated = vec![0; (new_width * new_height * 4) as usize];
+    
+        // Calculate the center of the new and old images
+        let center_x = width as f64 / 2.0;
+        let center_y = height as f64 / 2.0;
+        let new_center_x = new_width as f64 / 2.0;
+        let new_center_y = new_height as f64 / 2.0;
+    
+        for new_y in 0..new_height {
+            for new_x in 0..new_width {
+                let dx = new_x as f64 - new_center_x;
+                let dy = new_y as f64 - new_center_y;
+    
+                // Compute the corresponding source coordinates
+                let src_x = (dx * cos_theta + dy * sin_theta + center_x).round();
+                let src_y = (-dx * sin_theta + dy * cos_theta + center_y).round();
+    
+                // Ensure source coordinates are within bounds
+                if src_x >= 0.0 && src_x < width as f64 && src_y >= 0.0 && src_y < height as f64 {
+                    let src_x = src_x as u32;
+                    let src_y = src_y as u32;
+    
+                    let old_idx = ((src_y * width + src_x) * 4) as usize;
+                    let new_idx = ((new_y * new_width + new_x) * 4) as usize;
+    
+                    // Copy pixel data from the source to the destination
+                    rotated[new_idx..new_idx + 4].copy_from_slice(&data[old_idx..old_idx + 4]);
+                }
+            }
+        }
+    
+        // Return the rotated image data and new dimensions
+        (rotated, new_width, new_height)
+    }
 
     pub async fn render(&self, context: &CanvasRenderingContext2d) {
-        for (index, image) in self.images.iter().enumerate() {
-            // let (rotated_data, rotated_width, rotated_height) = self.rotate(
-            //     &image.data,
-            //     image.original_width,
-            //     image.original_height,
-            //     image.rotation, 
-            // );
-    
-            // Now resize the rotated image to the desired width and height
+        for image in &self.images {
             let resized_data = self.resize_image(
                 &image.data,
                 image.original_width,
@@ -171,43 +212,35 @@ impl ImageManager {
                 image.height,
             );
 
-            let clamped_data = Clamped(&resized_data[..]);
+            let (rotated_data, new_width, new_height) = self.rotate(
+                &resized_data,
+                image.width,
+                image.height,
+                image.rotation,
+            );
 
+            let clamped_data = Clamped(&rotated_data[..]);
             let image_data = ImageData::new_with_u8_clamped_array_and_sh(
                 clamped_data,
-                image.width,
-                image.height
+                new_width,
+                new_height,
             ).unwrap();    
 
-
-            context.set_global_composite_operation("source-over").unwrap();
             let bmp_promise = web_sys::window()
-            .unwrap()
-            .create_image_bitmap_with_image_data(&image_data)
-            .unwrap();
+                .unwrap()
+                .create_image_bitmap_with_image_data(&image_data)
+                .unwrap();
         
             let bmp = JsFuture::from(bmp_promise).await.unwrap();
             let bmp: ImageBitmap = bmp.dyn_into().unwrap();
 
-            // Save the current canvas state
-            context.save();
+            // Calculate the position to center the rotated image
+            let x_offset = (new_width as f64 - image.width as f64) / 2.0;
+            let y_offset = (new_height as f64 - image.height as f64) / 2.0;
+            let draw_x = image.x - x_offset;
+            let draw_y = image.y - y_offset;
 
-            // Move the origin to the center of the image before rotating
-            let center_x = image.x + image.width as f64 / 2.0;
-            let center_y = image.y + image.height as f64 / 2.0;
-
-            
-           
-            // Translate and rotate the canvas
-            context.translate(center_x, center_y).unwrap();
-            context.rotate(image.rotation.to_radians()).unwrap();
-
-            // Draw the image, offset by the image's width and height, so it rotates around its center
-            context.draw_image_with_image_bitmap(&bmp, -(image.width as f64) / 2.0, -(image.height as f64) / 2.0).unwrap();
-
-            // Restore the canvas to its original state (pre-rotation)
-            context.restore();
-
+            context.draw_image_with_image_bitmap(&bmp, draw_x, draw_y).unwrap();
         }
     }
 }

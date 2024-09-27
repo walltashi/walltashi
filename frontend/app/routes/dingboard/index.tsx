@@ -119,7 +119,7 @@ function DingBoard() {
       if (rect) {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        imageManager.move_image(selectedImage, x - dragStart.x, y - dragStart.y);
+        imageManager.move_image_relative(selectedImage, x - dragStart.x, y - dragStart.y);
         setDragStart({ x, y });
         setVersion((prev) => prev + 1);
       }
