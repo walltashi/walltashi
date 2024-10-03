@@ -85,7 +85,11 @@
       "**/.eslintrc.cjs",
       "routeTree.gen.ts",
       "**/node_modules",
-      "**/dist/**"
+      "**/dist/**",
+      "target/**",
+      "pkg/**",
+      "*.wasm",
+      "wasm/**"
     ]
   },
   "javascript": {

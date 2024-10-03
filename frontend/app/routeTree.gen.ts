@@ -13,6 +13,7 @@
 import { Route as rootRoute } from "./routes/__root";
 import { Route as IndexImport } from "./routes/index";
 import { Route as ExampleIndexImport } from "./routes/example/index";
+import { Route as DingboardIndexImport } from "./routes/dingboard/index";
 
 // Create/Update Routes
 
@@ -26,6 +27,11 @@ const ExampleIndexRoute = ExampleIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const DingboardIndexRoute = DingboardIndexImport.update({
+  path: "/dingboard/",
+  getParentRoute: () => rootRoute,
+} as any);
+
 // Populate the FileRoutesByPath interface
 
 declare module "@tanstack/react-router" {
@@ -35,6 +41,13 @@ declare module "@tanstack/react-router" {
       path: "/";
       fullPath: "/";
       preLoaderRoute: typeof IndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/dingboard/": {
+      id: "/dingboard/";
+      path: "/dingboard";
+      fullPath: "/dingboard";
+      preLoaderRoute: typeof DingboardIndexImport;
       parentRoute: typeof rootRoute;
     };
     "/example/": {
@@ -51,36 +64,41 @@ declare module "@tanstack/react-router" {
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/dingboard": typeof DingboardIndexRoute;
   "/example": typeof ExampleIndexRoute;
 }
 
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/dingboard": typeof DingboardIndexRoute;
   "/example": typeof ExampleIndexRoute;
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute;
   "/": typeof IndexRoute;
+  "/dingboard/": typeof DingboardIndexRoute;
   "/example/": typeof ExampleIndexRoute;
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/example";
+  fullPaths: "/" | "/dingboard" | "/example";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/example";
-  id: "__root__" | "/" | "/example/";
+  to: "/" | "/dingboard" | "/example";
+  id: "__root__" | "/" | "/dingboard/" | "/example/";
   fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  DingboardIndexRoute: typeof DingboardIndexRoute;
   ExampleIndexRoute: typeof ExampleIndexRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DingboardIndexRoute: DingboardIndexRoute,
   ExampleIndexRoute: ExampleIndexRoute,
 };
 
@@ -97,11 +115,15 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/dingboard/",
         "/example/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/dingboard/": {
+      "filePath": "dingboard/index.tsx"
     },
     "/example/": {
       "filePath": "example/index.tsx"
